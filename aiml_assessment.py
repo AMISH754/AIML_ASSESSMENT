@@ -1,6 +1,6 @@
 """
 EC24313 AI & ML - Assessment 1
-Records "BIT" and "Your Name", then:
+Records "BIT" and "Your Name" in ONE recording, then:
  Q2: plots the waveform and reports the sampling frequency
  Q3: marks the silent / unvoiced regions
  Q4: removes the silence and saves the trimmed audio
@@ -8,6 +8,7 @@ Records "BIT" and "Your Name", then:
 """
 
 import os
+import re
 import time
 import numpy as np
 import sounddevice as sd
@@ -17,7 +18,7 @@ from scipy.signal import stft
 
 # ------------------ Settings ------------------
 FS = 44100          # sampling frequency for recording (Hz)
-DURATION = 3        # seconds per recording
+DURATION = 5        # seconds for the recording ("BIT" + pause + name)
 TOP_DB = 30         # frames this many dB below the loudest frame count as silence
 FRAME_MS = 25       # analysis frame length (ms)
 HOP_MS = 10         # frame step (ms)
@@ -41,7 +42,7 @@ def record_word(filename, prompt):
         if np.max(np.abs(audio)) < 0.01:
             print("  WARNING: Very quiet recording. Check your microphone.")
 
-        again = input("  Re-record this one? (y/N): ").strip().lower()
+        again = input("  Re-record? (y/N): ").strip().lower()
         if again != "y":
             sf.write(filename, audio, FS)
             print(f"  Saved as {filename}")
@@ -171,15 +172,12 @@ def analyse(path):
 if __name__ == "__main__":
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    name = input("Enter your name (e.g. Rohit): ").strip().replace(" ", "_") or "Student"
+    name = re.sub(r"[^\w]+", "_", input("Enter your name (e.g. Rohit): ").strip()).strip("_") or "Student"
     print("Using microphone:", sd.query_devices(kind="input")["name"])
-    print("Tip: stay quiet for a moment after 'SPEAK NOW' so there is silence to detect.")
+    print("Tip: say 'BIT', pause for about 1 second, then say your name.")
 
-    file_bit = record_word(f"{name}_BIT.wav", '"BIT"')
-    file_name = record_word(f"{name}_Name.wav", f'your name "{name}"')
-
-    analyse(file_bit)
-    analyse(file_name)
+    file_both = record_word(f"{name}_BIT_Name.wav", f'"BIT" ... (pause) ... "{name}"')
+    analyse(file_both)
 
     print(f"\nAll plots and trimmed audio saved in the '{OUT_DIR}' folder.")
     plt.show()
